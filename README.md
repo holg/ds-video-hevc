@@ -115,3 +115,7 @@ and the last line is `PASS`.
 - Raw passthrough sends the original file, so the client must be able to decode it
   (the Apple TV plays HEVC natively). No subtitle burn-in or audio transcoding
   happens in this mode.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

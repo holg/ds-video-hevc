@@ -3,6 +3,7 @@ name = "dsvideo-passthrough"
 version = "0.1.0"
 edition = "2024"
 description = "Proxy in front of Synology Video Station that lets DS Video play HEVC files untouched (raw passthrough)"
+license = "MIT"
 
 [profile.release]
 lto = true
