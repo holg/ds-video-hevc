@@ -1,0 +1,17 @@
+#!/bin/sh
+. "$(dirname "$0")/common"
+
+# Only the matching binary is needed on this box.
+keep=$(binary_path) || exit 1
+for b in "$PKG_DEST"/bin/*/dsvideo-passthrough; do
+    [ "$b" = "$keep" ] || rm -f "$b"
+done
+chmod 755 "$keep"
+
+# Wizard values are only present on a fresh install; upgrades keep the config.
+if [ -n "$wizard_listen_port" ] || [ ! -f "$CONFIG" ]; then
+    port="${wizard_listen_port:-$DEFAULT_PORT}"
+    upstream="${wizard_upstream:-$DEFAULT_UPSTREAM}"
+    printf 'PORT=%s\nUPSTREAM=%s\n' "$port" "$upstream" > "$CONFIG"
+fi
+exit 0

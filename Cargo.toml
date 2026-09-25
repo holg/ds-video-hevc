@@ -1,0 +1,20 @@
+[package]
+name = "dsvideo-passthrough"
+version = "0.1.0"
+edition = "2024"
+description = "Proxy in front of Synology Video Station that lets DS Video play HEVC files untouched (raw passthrough)"
+
+[profile.release]
+lto = true
+strip = true
+
+[dependencies]
+axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio"] }
+clap = { version = "4.6.7", features = ["derive"] }
+flate2 = "1.1.10"
+form_urlencoded = "1.2.2"
+futures-util = "0.3.34"
+reqwest = { version = "0.13.5", default-features = false, features = ["stream"] }
+rpassword = "7.5.4"
+serde_json = "1.0.151"
+tokio = { version = "1.53.1", features = ["full"] }

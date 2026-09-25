@@ -1,0 +1,28 @@
+# Shared by the package scripts (sourced, not executed).
+
+PKG_VAR="${SYNOPKG_PKGVAR:-/var/packages/dsvideo_passthrough/var}"
+PKG_DEST="${SYNOPKG_PKGDEST:-/var/packages/dsvideo_passthrough/target}"
+CONFIG="$PKG_VAR/config"
+PID_FILE="$PKG_VAR/dsvideo-passthrough.pid"
+LOG_FILE="$PKG_VAR/dsvideo-passthrough.log"
+LOG_MAX_BYTES=5242880
+
+DEFAULT_PORT=5080
+DEFAULT_UPSTREAM="http://127.0.0.1:5000"
+
+# Print the binary matching this CPU (the package ships one per architecture).
+binary_path() {
+    case "$(uname -m)" in
+        x86_64|amd64)        arch=x86_64 ;;
+        aarch64|arm64)       arch=aarch64 ;;
+        armv7*|armv8l)       arch=armv7 ;;
+        *) echo "unsupported CPU architecture: $(uname -m)" >&2; return 1 ;;
+    esac
+    echo "$PKG_DEST/bin/$arch/dsvideo-passthrough"
+}
+
+# config_get KEY DEFAULT — read KEY=value from $CONFIG without sourcing it.
+config_get() {
+    value=$(sed -n "s/^$1=//p" "$CONFIG" 2>/dev/null | tail -n 1)
+    echo "${value:-$2}"
+}
