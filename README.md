@@ -32,7 +32,7 @@ each API call and its outcome to stderr.
 
 ## Install on the NAS (DSM 7)
 
-1. Build the package (see below).
+1. Download the `.spk` from [Releases](https://github.com/holg/ds-video-hevc/releases), or build it yourself (see below).
 2. In **Package Center → Manual Install**, pick
    `dsvideo_passthrough-<version>.spk`. Video Station must be installed.
 3. The install wizard asks for:
