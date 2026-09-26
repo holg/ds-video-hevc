@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# cross_build_on_mac.sh — build static Linux (musl) binaries for Synology NAS.
+# cross_build_on_mac.sh — build static Linux (musl) binaries for Synology NAS
+# (works on macOS and Linux; CI uses it too).
 # Usage: ./cross_build_on_mac.sh [target-triple ...]   (default: all Synology targets)
 #
 # The crate is pure Rust (no OpenSSL, no C deps), so the musl targets link with

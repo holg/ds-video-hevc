@@ -10,8 +10,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 need() { command -v "$1" >/dev/null || { echo "❌ '$1' not found"; exit 1; }; }
-need gtar
 need jq
+
+# GNU tar is needed (--owner/--no-xattrs): "gtar" on macOS, plain "tar" on Linux.
+if command -v gtar >/dev/null; then GTAR=gtar; else GTAR=tar; fi
+"$GTAR" --version 2>/dev/null | grep -q "GNU tar" || { echo "❌ GNU tar not found (brew install gnu-tar)"; exit 1; }
+
+md5_of() { if command -v md5sum >/dev/null; then md5sum "$1" | cut -d' ' -f1; else md5 -q "$1"; fi; }
 
 PKG_NAME="dsvideo_passthrough"
 BIN="dsvideo-passthrough"
@@ -53,11 +58,11 @@ for jf in conf/privilege conf/resource WIZARD_UIFILES/install_uifile; do
   jq empty "$STAGE/$jf" || { echo "❌ Invalid JSON: $jf"; exit 1; }
 done
 
-TAR=(gtar --owner=0 --group=0 --numeric-owner --no-xattrs --exclude=.DS_Store)
+TAR=("$GTAR" --owner=0 --group=0 --numeric-owner --no-xattrs --exclude=.DS_Store)
 "${TAR[@]}" -czf "$STAGE/package.tgz" -C "$STAGE/payload" .
 
 sed "s/@VERSION@/$VERSION/" "$SRC/INFO.in" > "$STAGE/INFO"
-echo "checksum=\"$(md5 -q "$STAGE/package.tgz")\"" >> "$STAGE/INFO"
+echo "checksum=\"$(md5_of "$STAGE/package.tgz")\"" >> "$STAGE/INFO"
 
 ##############################################################################
 # 3. Assemble the .spk (plain tar)
@@ -66,4 +71,4 @@ echo "checksum=\"$(md5 -q "$STAGE/package.tgz")\"" >> "$STAGE/INFO"
   INFO package.tgz conf scripts WIZARD_UIFILES PACKAGE_ICON.PNG PACKAGE_ICON_256.PNG
 
 echo "✔  Built: $OUT"
-gtar -tvf "$OUT"
+"$GTAR" -tvf "$OUT"

@@ -1,0 +1,88 @@
+# Builds the Synology package on GitHub's runners.
+#
+# - push / pull request to main: build the .spk and keep it as a workflow artifact.
+# - push of a tag vX.Y.Z:        build it, attest its provenance and attach it to the
+#                                GitHub release of that tag (created if missing).
+# - manual run with a tag:       rebuild and replace the .spk of an existing release.
+#
+# Verify a downloaded package with:
+#   gh attestation verify dsvideo_passthrough-<ver>.spk --repo holg/ds-video-hevc
+
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)build, e.g. v0.1.0"
+        required: true
+      build:
+        description: "Package build number"
+        default: "0001"
+
+permissions:
+  contents: read
+
+jobs:
+  spk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # upload release assets
+      id-token: write      # sign the provenance attestation
+      attestations: write
+    env:
+      TAG: ${{ inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
+      BUILD: ${{ inputs.build || '0001' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl,aarch64-unknown-linux-musl,armv7-unknown-linux-musleabihf
+
+      - name: Check tag matches Cargo.toml version
+        if: env.TAG != ''
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
+          [ "v$version" = "$TAG" ] || { echo "::error::tag $TAG does not match Cargo.toml version $version"; exit 1; }
+
+      - name: Build package
+        run: ./make_spk.sh "$BUILD"
+
+      - name: Checksums
+        id: files
+        run: |
+          spk=$(ls dist/*.spk)
+          echo "spk=$spk" >> "$GITHUB_OUTPUT"
+          (cd dist && sha256sum -- *.spk | tee SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spk
+          path: |
+            dist/*.spk
+            dist/SHA256SUMS
+
+      - name: Attest build provenance
+        if: env.TAG != ''
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ steps.files.outputs.spk }}
+
+      - name: Publish release asset
+        if: env.TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "$TAG" \
+              --notes "Built by GitHub Actions from $TAG. Verify with: gh attestation verify <file>.spk --repo $GITHUB_REPOSITORY"
+          fi
+          gh release upload "$TAG" "${{ steps.files.outputs.spk }}" dist/SHA256SUMS --clobber

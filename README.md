@@ -33,6 +33,11 @@ each API call and its outcome to stderr.
 ## Install on the NAS (DSM 7)
 
 1. Download the `.spk` from [Releases](https://github.com/holg/ds-video-hevc/releases), or build it yourself (see below).
+   Release packages are built by GitHub Actions from the tagged commit, and each
+   comes with a signed build provenance attestation. To check a download:
+   ```sh
+   gh attestation verify dsvideo_passthrough-<version>.spk --repo holg/ds-video-hevc
+   ```
 2. In **Package Center → Manual Install**, pick
    `dsvideo_passthrough-<version>.spk`. Video Station must be installed.
 3. The install wizard asks for:
@@ -49,8 +54,8 @@ at 5 MB.
 
 ## Build
 
-Requirements: Rust (via `rustup`), plus `gtar` and `jq` for packaging
-(`brew install gnu-tar jq` on macOS).
+Requirements: Rust (via `rustup`), plus GNU tar and `jq` for packaging
+(`brew install gnu-tar jq` on macOS; Linux already has GNU tar).
 
 ```sh
 # Static Linux (musl) binaries for all Synology targets
@@ -66,7 +71,21 @@ Requirements: Rust (via `rustup`), plus `gtar` and `jq` for packaging
 
 The crate is pure Rust with no OpenSSL or other C dependencies, so the musl
 targets link with the `rust-lld` that ships with rustup. You don't need a
-cross-compiling toolchain.
+cross-compiling toolchain. The scripts work on macOS and Linux.
+
+### Releases
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) builds the
+package on every push and pull request to `main`. To publish a release, bump
+`version` in `Cargo.toml`, commit, then tag and push:
+
+```sh
+git tag v0.1.1 && git push origin v0.1.1
+```
+
+The workflow checks that the tag matches the `Cargo.toml` version, builds the
+`.spk`, signs its provenance and attaches it with a `SHA256SUMS` file to the
+release.
 
 ## Run manually
 
